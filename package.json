@@ -4,8 +4,8 @@
   "description": "#How to start this application `npm run server`",
   "main": "index.js",
   "scripts": {
-    "start": "webpack -p && nodemon -L server/server.js",
-    "server": "nodemon server/server.js"
+    "start": "webpack -p && nodemon -L server.js",
+    "u-server": "nodemon server.js"
   },
   "repository": {
     "type": "git",

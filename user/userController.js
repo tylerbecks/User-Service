@@ -3,8 +3,9 @@ const neo4j = require('neo4j');
 const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
 // const db = new neo4j.GraphDatabase('http://app55234389-2DSvfe:UxlI4yKGxG8cueLnV1ca@app552343892dsvfe.sb10.stations.graphenedb.com:24789');
-const db = new neo4j.GraphDatabase('http://neo4j:neo4j@localhost:7474');
+const db = new neo4j.GraphDatabase('http://neo4j:cake@localhost:7474');
 const request = require('request');
+require('../helpers/api_keys');
 
 const queryUserSubreddits = (redditId) => (
   new Promise((resolve, reject) => {
@@ -30,18 +31,11 @@ const queryUserSubreddits = (redditId) => (
 // Get the user's temporary access token
 const queryAccessToken = (redditId) => (
   new Promise((resolve, reject) => {
-    db.cypher({
-      query: 'MATCH (n:Person) WHERE n.redditId={redditId} return n.accessToken;',
-      params: {
-        redditId,
-      },
-    }, (err, results) => {
+    dbSql.Users.findAll({ where: { redditId: redditId } }).then((userData, err) => {
       if (err) {
-        console.log(`server/userController.js 94: issue with retrieving ${err}`);
         reject(err);
       } else {
-        console.log(`server/userController.js 97: here is the accessToken ${results[0]['n.accessToken']}`);
-        resolve(results[0]['n.accessToken']);
+        resolve(userData[0].dataValues.accessToken);
       }
     });
   })
@@ -50,7 +44,7 @@ const queryAccessToken = (redditId) => (
 // Get the user's refresh token
 const queryRefreshToken = (username) => (
   new Promise((resolve, reject) => {
-    dbSql.Users.find({where: {name: username}}).then((userData) => {
+    dbSql.Users.find({ where: { name: username } }).then((userData) => {
       if (userData === undefined || userData === null) {
         reject('error with finding user');
       } else {
@@ -63,7 +57,6 @@ const queryRefreshToken = (username) => (
 
 // Get list of subscribed subreddits from reddit and add to the database
 const createUserSubreddits = (redditId) => {
-  // var redditId = req.query.redditId;
   // Request list of subscribed subreddits from Reddit
   queryAccessToken(redditId).then((accessToken) => {
     request({
@@ -74,11 +67,9 @@ const createUserSubreddits = (redditId) => {
         'User-Agent': 'javascript:reddi2mingle:v1.0.0 (by /u/neil_white)',
       },
     }, (err, response) => {
-
-
       // Create array of the subreddits
       const rawData = JSON.parse(response.body).data.children;
-      const subredditList = rawData.map(item => ({name: item.data.display_name, subscribers: item.data.subscribers}));
+      const subredditList = rawData.map(item => ({ name: item.data.display_name, subscribers: item.data.subscribers}));
 
       // Build cypher query to save new subreddits to database
       var mergeArray = [];
@@ -130,7 +121,6 @@ const createUserSubreddits = (redditId) => {
               console.log(`server/userController.js 158: issue with adding ${results}: ${err}`);
             } else {
               console.log(`server/userController.js 160: subreddit relationships saved to database, results:  ${results}`);
-              potentialController.createPotentials(redditId);
             }
           });
         }
@@ -160,20 +150,25 @@ module.exports = {
       },
     }, (err, results) => {
       if (err) {
-        console.log(`server/userController.js 193: issue with adding ${profile.name}: ${err}`);
+        console.log(`user-service/userController.js: issue with adding ${profile.name}: ${err}`);
       } else {
-        console.log(`server/userController.js 195: user is actually saved to database, results: ${results}`);
-        // createUserSubreddits(profile.id);
-        dbSql.Users.findOrCreate({ where: { redditId: profile.id,
-          name: profile.name,
-          refreshToken: refreshToken,
-          accessToken: accessToken,
-          photo: 'https://cdn1.iconfinder.com/data/icons/simple-icons/4096/reddit-4096-black.png',
-          },
-        })
-        .then((data)=> {
-          console.log('User added to MySQL database:',data);
-          // createUserSubreddits(profile.id);
+        console.log(`user-service/userController.js: user is actually saved to Neo4j, results: ${results}`);
+        // Find or create the user
+        dbSql.Users.findOrCreate({ where: { redditId: profile.id, name: profile.name } }).then(() => {
+          dbSql.Users.find({ where: { redditId: profile.id } }).then((task) => {
+            // Update is invoked (so that we aren't creating duplicate users)
+            task.update({
+              refreshToken: refreshToken,
+              accessToken: accessToken,
+              photo: 'https://cdn1.iconfinder.com/data/icons/simple-icons/4096/reddit-4096-black.png',
+              preference: null,
+              gender: null,
+            });
+          })
+          .then((data) => {
+            console.log('user-service/userController.js: User added to MySQL database:', profile.id);
+            createUserSubreddits(profile.id);
+          });
         });
       }
     });
@@ -269,9 +264,23 @@ module.exports = {
         console.log(`server/userController.js: error with updating preference and gender ${err}`);
       } else {
         console.log('server/userController.js: gender and prefernce added sucessfully');
-        dbSql.Users.find({where: {redditId: redditId}}).then((task) => {
-          task.update({gender: gender, preference: preference}).then((data2) => {
-            res.send('preferences updated in MySQL');
+        dbSql.Users.find({ where: { redditId: redditId }}).then((task) => {
+          task.update({ gender: gender, preference: preference }).then((data2) => {
+            // User preferences have now been added
+            // Request main app server to being the potential creation process
+            request({
+              method: 'POST',
+              url: `http://localhost:${process.env.PORT_APP}/api/potentials/createPotentials`,
+              form: {
+                redditId: redditId,
+              }
+            }, (err, response) => {
+              if (err) {
+                console.log('error with creating potentials');
+              } else {
+                res.send('preferences updated in MySQL and potentials created');
+              }
+            })
           });
         });
       }
