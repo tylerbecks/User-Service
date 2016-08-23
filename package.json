@@ -1,0 +1,41 @@
+{
+  "name": "user-service",
+  "version": "1.0.0",
+  "description": "#How to start this application `npm run server`",
+  "main": "index.js",
+  "scripts": {
+    "start": "webpack -p && nodemon -L server/server.js",
+    "server": "nodemon server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/christinechou/Reddi2MingleMVP.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/christinechou/Reddi2MingleMVP/issues"
+  },
+  "homepage": "https://github.com/christinechou/user-service",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "crypto": "0.0.3",
+    "expect": "^1.20.2",
+    "express": "^4.14.0",
+    "express-session": "^1.14.0",
+    "morgan": "^1.7.0",
+    "mysql": "^2.11.1",
+    "neo4j": "^2.0.0-RC2",
+    "nodemon": "^1.9.2",
+    "passport": "^0.3.2",
+    "passport-reddit": "^0.2.4",
+    "path": "^0.12.7",
+    "sequelize": "^3.24.0",
+    "socket.io-client": "^1.4.8",
+    "webpack-merge": "^0.14.1"
+  },
+  "directories": {
+    "test": "test"
+  }
+}
