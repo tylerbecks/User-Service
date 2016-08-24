@@ -12,7 +12,7 @@ userRouter.post('/updateAccessToken', userController.updateAccessToken);
 userRouter.post('/updatePassword', userController.updatePassword);
 userRouter.post('/loginCredentials', userController.loginCredentials);
 userRouter.get('/userInfo', userController.queryUserInfo);
-// userRouter.get('/updateProfile', userController.updateProfile);
+userRouter.post('/saveVotes', userController.saveVotes);
 
 
 module.exports = userRouter;

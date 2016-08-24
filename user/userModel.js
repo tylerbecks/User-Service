@@ -12,11 +12,11 @@ const Users = function (sequelize, DataTypes) {
     trophyCount: { type: DataTypes.INTEGER },
     postKarma: { type: DataTypes.INTEGER },
     commentKarma: { type: DataTypes.INTEGER },
-    goldMember: { type: DataTypes.BOOLEAN },
-    receivedUpvotes: { type: DataTypes.INTEGER },
-    receivedDownvotes: { type: DataTypes.INTEGER },
-    deliveredUpvotes: { type: DataTypes.INTEGER },
-    deliveredDownvotes: { type: DataTypes.INTEGER },
+    goldMember: { type: DataTypes.STRING },
+    receivedUpvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
+    receivedDownvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
+    deliveredUpvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
+    deliveredDownvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
   });
 
 };
