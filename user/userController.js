@@ -3,7 +3,7 @@ const neo4j = require('neo4j');
 const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
 // const db = new neo4j.GraphDatabase('http://app55234389-2DSvfe:UxlI4yKGxG8cueLnV1ca@app552343892dsvfe.sb10.stations.graphenedb.com:24789');
-const db = new neo4j.GraphDatabase('http://neo4j:cake@localhost:7474');
+const db = new neo4j.GraphDatabase(`http://neo4j:cake@${process.env.HOST}:7474`);
 const request = require('request');
 require('../helpers/api_keys');
 
@@ -227,6 +227,7 @@ const updateProfileData = (redditId, res) => (
 );
 
 module.exports = {
+<<<<<<< 1b35d2ef7cdba9876f0fc4a0eaccf6ef310ee6f0
 
   // Increment number of delivered and received upvotes and downvotes
   saveVotes: (req, res) => {
@@ -298,7 +299,7 @@ module.exports = {
         });
       }
     });
-  },
+  },  
 
   loginCredentials: (req, res) => {
     var username = req.body.username;
@@ -361,7 +362,7 @@ module.exports = {
             // Request main app server to being the potential creation process
             request({
               method: 'POST',
-              url: `http://localhost:${process.env.PORT_APP}/api/potentials/createPotentials`,
+              url: `http://${process.env.HOST}:${process.env.PORT_APP}/api/potentials/createPotentials`,
               form: {
                 redditId: redditId,
               }
