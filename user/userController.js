@@ -3,21 +3,9 @@ const neo4j = require('neo4j');
 const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
 // const db = new neo4j.GraphDatabase('http://app55234389-2DSvfe:UxlI4yKGxG8cueLnV1ca@app552343892dsvfe.sb10.stations.graphenedb.com:24789');
-const db = new neo4j.GraphDatabase(`http://neo4j:cake@$neo4j:7474`);
+const db = new neo4j.GraphDatabase(`http://neo4j:cake@neo4j:7474`);
 const request = require('request');
 require('../helpers/api_keys');
-
-// console.log(db)
-db.cypher({
-  query: 'CREATE (n {name: "Christine Chou"})',
-}, (err, yay) => {
-  if (err) {
-    console.log('could not save christine chou with err',err);
-    
-  } else {
-    console.log('SAVED!!!!!!!!!!!!!!!',yay)
-  }
-});
 
 
 const queryUserSubreddits = (redditId) => (
