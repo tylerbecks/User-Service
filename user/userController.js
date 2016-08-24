@@ -55,12 +55,60 @@ const queryRefreshToken = (username) => (
   })
 );
 
+// Get trophies from Reddit
+const trophiesFromReddit = (redditId) => (
+  new Promise((resolve, reject) => {
+    queryAccessToken(redditId).then((accessToken) => {
+      request({
+        url: 'https://oauth.reddit.com/api/v1/me/trophies',
+        method: 'GET',
+        headers: {
+          'authorization': `bearer ${accessToken}`,
+          'User-Agent': 'javascript:reddi2mingle:v1.0.0 (by /u/neil_white)',
+        },
+      }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          var trophyCount = JSON.parse(response.body).data.trophies.length || 0;
+          resolve(trophyCount);
+        }
+      });
+    });
+  })
+);
+
+// Get karma and gold member status from Reddit
+const karmaFromReddit = (redditId) => (
+  new Promise((resolve, reject) => {
+    queryAccessToken(redditId).then((accessToken) => {
+      request({
+        url: 'https://oauth.reddit.com/api/v1/me',
+        method: 'GET',
+        headers: {
+          'authorization': `bearer ${accessToken}`,
+          'User-Agent': 'javascript:reddi2mingle:v1.0.0 (by /u/neil_white)',
+        },
+      }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          var postKarma = JSON.parse(response.body).link_karma;
+          var commentKarma = JSON.parse(response.body).comment_karma;
+          var goldMemberStatus = JSON.parse(response.body).is_gold;
+          resolve({postKarma: postKarma, commentKarma: commentKarma, goldMember: goldMemberStatus});
+        }
+      });
+    });
+  })
+);
+
 // Get list of subscribed subreddits from reddit and add to the database
-const createUserSubreddits = (redditId) => {
+const createUserSubreddits = (redditId, res) => {
   // Request list of subscribed subreddits from Reddit
   queryAccessToken(redditId).then((accessToken) => {
     request({
-      url: 'https://@oauth.reddit.com/subreddits/mine',
+      url: 'https://oauth.reddit.com/subreddits/mine',
       method: 'GET',
       headers: {
         'authorization': `bearer ${accessToken}`,
@@ -121,6 +169,8 @@ const createUserSubreddits = (redditId) => {
               console.log(`server/userController.js 158: issue with adding ${results}: ${err}`);
             } else {
               console.log(`server/userController.js 160: subreddit relationships saved to database, results:  ${results}`);
+              // Kick off the process to update the profile data (karma, trophies, gold member status)
+              updateProfileData(redditId, res);
             }
           });
         }
@@ -129,8 +179,57 @@ const createUserSubreddits = (redditId) => {
   });
 };
 
+// Update the profile data (karma, trophies, gold member, status)
+const updateProfileData = (redditId, res) => (
+  trophiesFromReddit(redditId).then((trophyCount) => {
+    karmaFromReddit(redditId).then((karmaCount) => { 
+      var goldMemberStatus = karmaCount.goldMember === "true" ? "Yes" : "No";
+      dbSql.Users.find( { where: { redditId: redditId }}).then((task) => {
+        task.update({
+          trophyCount: trophyCount,
+          postKarma: karmaCount.postKarma,
+          commentKarma: karmaCount.commentKarma,
+          goldMember: goldMemberStatus,
+        })
+        .then(() => {
+          res.send('user creation process finished');
+        })
+      })
+    })
+  })
+);
+
 module.exports = {
-  //once authenticated, create new user in neo4j. once successful, create new user in sql
+
+  // Increment number of delivered and received upvotes and downvotes
+  saveVotes: (req, res) => {
+    const deliveredUpvotes = Number(req.body.deliveredUpvotes);
+    const deliveredDownvotes = Number(req.body.deliveredDownvotes);
+    const potentialRedditId = req.body.potentialRedditId
+    const userRedditId = req.body.userRedditId
+    // Increment the delievered upvote / downvote
+    dbSql.Users.find({ where: { redditId: userRedditId }}).then((userTask) => {
+      var newDeliveredUpvotes = userTask.dataValues.deliveredUpvotes + deliveredUpvotes;
+      var newDeliveredDownvotes = userTask.dataValues.deliveredDownvotes + deliveredDownvotes;
+      userTask.update({
+        deliveredUpvotes: newDeliveredUpvotes,
+        deliveredDownvotes: newDeliveredDownvotes,
+      })
+      // Then increment the received upvote / downvote for the potential
+      .then(() => {
+        dbSql.Users.find({ where: { redditId: potentialRedditId }}).then((potentialTask) => {
+          var newReceivedUpvotes = potentialTask.dataValues.receivedUpvotes + deliveredUpvotes;
+          var newReceivedDownvotes = potentialTask.dataValues.receivedDownvotes + deliveredDownvotes;
+          potentialTask.update({
+            receivedUpvotes: newReceivedUpvotes,
+            receivedDownvotes: newReceivedDownvotes,
+          })
+        })
+      })
+    })
+  },
+
+  // Once authenticated, create new user in neo4j. once successful, create new user in sql
   createNewUser: (req, res) => {
     console.log('create New User in user service');
 
@@ -163,11 +262,11 @@ module.exports = {
               photo: 'https://cdn1.iconfinder.com/data/icons/simple-icons/4096/reddit-4096-black.png',
               preference: null,
               gender: null,
-            });
-          })
-          .then((data) => {
-            console.log('user-service/userController.js: User added to MySQL database:', profile.id);
-            createUserSubreddits(profile.id);
+            })
+            .then((data) => {
+              console.log('user-service/userController.js: User added to MySQL database:', profile.id);
+              createUserSubreddits(profile.id, res);
+            })
           });
         });
       }
@@ -192,26 +291,13 @@ module.exports = {
 
   queryUserInfo: (req, res) => {
     const redditId = req.query.redditId;
-    // var subreddits = [];
     console.log(`server/userController.js 211: my reddit id: ${redditId}`);
-    // First query database for subreddit connections
-    queryUserSubreddits(redditId).then((subreddits) => {
-      // Query database for the user's name, photo, etc.
-      db.cypher({
-        query: 'MATCH (user:Person) WHERE user.redditId={redditId} RETURN user;',
-        params: {
-          redditId,
-        },
-      }, (err, results) => {
-        if (err) {
-          console.log(`server/userController.js 222: issue with retrieving, err: ${err}`);
-        } else {
-          console.log(`server/userController.js 224: results: ${results}`);
-          var aggregateInfo = results[0].user.properties;
-          aggregateInfo.subreddits = subreddits;
-
-          res.send(aggregateInfo);
-        }
+    // First query database for subreddit connections    
+    dbSql.Users.find({where: {redditId: redditId }}).then((userInfo)=> {    
+      var aggregateInfo = userInfo.dataValues;
+      queryUserSubreddits(redditId).then((subreddits) => {
+        aggregateInfo.subreddits = subreddits;
+        res.send(aggregateInfo);
       });
     });
   },
@@ -232,7 +318,7 @@ module.exports = {
 
     queryRefreshToken(username, password).then((refreshToken) => {
       request({
-        url: `https://T3zDXS9GxKukbA:TAKMSJzrlZPzTWxK5O3w7OglWA8@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=T3zDXS9GxKukbA&redirect_uri=http://127.0.0.1:3000/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
+        url: `https://${process.env['REDDIT_KEY']}:${process.env['REDDIT_SECRET']}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${process.env['REDDIT_KEY']}&redirect_uri=http://127.0.0.1:3000/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
         method: 'POST',
       }, (err, results) => {
         if (err) {

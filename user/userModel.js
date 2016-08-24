@@ -9,6 +9,14 @@ const Users = function (sequelize, DataTypes) {
     photo: { type: DataTypes.STRING },
     gender: { type: DataTypes.STRING },
     preference: { type: DataTypes.STRING },
+    trophyCount: { type: DataTypes.INTEGER },
+    postKarma: { type: DataTypes.INTEGER },
+    commentKarma: { type: DataTypes.INTEGER },
+    goldMember: { type: DataTypes.STRING },
+    receivedUpvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
+    receivedDownvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
+    deliveredUpvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
+    deliveredDownvotes: { type: DataTypes.INTEGER, defaultValue: 0 },
   });
 
 };
