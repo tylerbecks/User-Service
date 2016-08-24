@@ -383,7 +383,15 @@ module.exports = {
       if (err) {
         console.log(`server/userController.js: issue with updating photo, err ${err}`);
       } else {
-        res.send(results);
+        console.log('photo added to neo4j')
+        dbSql.Users.find({where: { redditId: req.body.redditId }}).then((task) => {
+          task.update({
+            photo: req.body.photo,
+          })
+          .then(() => {
+            res.send('photo added to neo4j and MySQL');
+          })
+        })
       }
     });
   },
