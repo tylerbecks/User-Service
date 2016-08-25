@@ -8,7 +8,7 @@ userRouter.post('/createUser', userController.createNewUser);
 // userRouter.post('/updatePassword', userController.updatePassword);
 userRouter.post('/addPreference', userController.addPreference);
 userRouter.post('/addPhoto', userController.addPhoto);
-userRouter.post('/updateAccessToken', userController.updateAccessToken);
+// userRouter.post('/updateAccessToken', userController.updateAccessToken);
 userRouter.post('/updatePassword', userController.updatePassword);
 userRouter.post('/loginCredentials', userController.loginCredentials);
 userRouter.get('/userInfo', userController.queryUserInfo);

@@ -55,6 +55,31 @@ const queryRefreshToken = (username) => (
   })
 );
 
+// Update MySQL with a new access_token from Reddit (lasts for one hour)
+const updateAccessToken = (username) => (
+  new Promise((resolve, reject) => {
+    queryRefreshToken(username).then((refreshToken) => {
+      request({
+        url: `https://${process.env['REDDIT_KEY']}:${process.env['REDDIT_SECRET']}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${process.env['REDDIT_KEY']}&redirect_uri=http://127.0.0.1:3000/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
+        method: 'POST',
+      }, (err, results) => {
+        if (err) {
+          console.log(`server/userController.js 222: issue with retrieving, err: ${err}`);
+          reject(err);
+        } else {
+          var newAccessToken = JSON.parse(results.body).access_token;
+          console.log(`server/userController.js 224: results: ${newAccessToken}`);
+          dbSql.Users.find({where: {name: username}}).then((task) => {
+            task.update({accessToken: newAccessToken}).then((data2) => {
+              resolve(newAccessToken);
+            });
+          });
+        }
+      });
+    });
+  })
+);
+
 // Get trophies from Reddit
 const trophiesFromReddit = (redditId) => (
   new Promise((resolve, reject) => {
@@ -64,7 +89,7 @@ const trophiesFromReddit = (redditId) => (
         method: 'GET',
         headers: {
           'authorization': `bearer ${accessToken}`,
-          'User-Agent': 'javascript:reddi2mingle:v1.0.0 (by /u/neil_white)',
+          'User-Agent': 'javascript:reddi2minglelocal:v1.0.0 (by /u/neil_white)',
         },
       }, (err, response) => {
         if (err) {
@@ -87,7 +112,7 @@ const karmaFromReddit = (redditId) => (
         method: 'GET',
         headers: {
           'authorization': `bearer ${accessToken}`,
-          'User-Agent': 'javascript:reddi2mingle:v1.0.0 (by /u/neil_white)',
+          'User-Agent': 'javascript:reddi2minglelocal:v1.0.0 (by /u/neil_white)',
         },
       }, (err, response) => {
         if (err) {
@@ -112,7 +137,7 @@ const createUserSubreddits = (redditId, res) => {
       method: 'GET',
       headers: {
         'authorization': `bearer ${accessToken}`,
-        'User-Agent': 'javascript:reddi2mingle:v1.0.0 (by /u/neil_white)',
+        'User-Agent': 'javascript:reddi2minglelocal:v1.0.0 (by /u/neil_white)',
       },
     }, (err, response) => {
       // Create array of the subreddits
@@ -192,7 +217,9 @@ const updateProfileData = (redditId, res) => (
           goldMember: goldMemberStatus,
         })
         .then(() => {
-          res.send('user creation process finished');
+          // Send the redditId to the main app server
+          // Main app server will then fetch user info
+          res.send(redditId);
         })
       })
     })
@@ -282,7 +309,9 @@ module.exports = {
         var redditId = data[0].dataValues.redditId;
         var name = data[0].dataValues.name;
         var photo = data[0].dataValues.photo;
-        res.send({ redditId: redditId, name: name, photo: photo });
+        updateAccessToken(username).then((accessToken) => {
+          createUserSubreddits(redditId, res);
+        });
       } else {
         res.status(401).send('invalid username or password');
       }
@@ -308,30 +337,6 @@ module.exports = {
     dbSql.Users.find({where: {redditId: redditId}}).then((task) => {
       task.update({password: password}).then((data2) => {
         res.send('password updated in MySQL');
-      });
-    });
-  },
-
-  updateAccessToken: (req, res) => {
-    var username = req.body.username;
-    var password = req.body.password;
-
-    queryRefreshToken(username, password).then((refreshToken) => {
-      request({
-        url: `https://${process.env['REDDIT_KEY']}:${process.env['REDDIT_SECRET']}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${process.env['REDDIT_KEY']}&redirect_uri=http://127.0.0.1:3000/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
-        method: 'POST',
-      }, (err, results) => {
-        if (err) {
-          console.log(`server/userController.js 222: issue with retrieving, err: ${err}`);
-        } else {
-          // console.log(`server/userController.js 224: results: ${results}`);
-          var newAccessToken = JSON.parse(results.body).access_token;
-          dbSql.Users.find({where: {name: username}}).then((task) => {
-            task.update({accessToken: newAccessToken}).then((data2) => {
-              res.send('accessToken updated in MySQL');
-            });
-          });
-        }
       });
     });
   },
