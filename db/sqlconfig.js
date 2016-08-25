@@ -1,3 +1,4 @@
+require('../helpers/api_keys')
 const Sequelize = require('sequelize');
 const keys = require('../helpers/api_keys');
 
