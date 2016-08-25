@@ -1,5 +1,6 @@
 require('../helpers/api_keys');
 const Sequelize = require('sequelize');
+require('../helpers/api_keys');
 // const sequelize = new Sequelize('heroku_bc34dd4371107d4', 'bd77d9f718d486', '21120e85', {
 //   host: 'us-cdbr-iron-east-04.cleardb.net',
 //   dialect: 'mysql',
