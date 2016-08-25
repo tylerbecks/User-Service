@@ -8,7 +8,8 @@ const Sequelize = require('sequelize');
 //     min: 0
 //   },
 // });
-const sequelize = new Sequelize('reddi2mingle', 'root', 'cake', {
+const sequelize = new Sequelize('reddi2mingle', 'root', 'root', {
+  host: `${process.env.MYSQL}`,
   dialect: 'mysql',
 });
 
