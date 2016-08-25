@@ -13,5 +13,4 @@ userRouter.post('/loginCredentials', userController.loginCredentials);
 userRouter.get('/userInfo', userController.queryUserInfo);
 userRouter.post('/saveVotes', userController.saveVotes);
 
-
 module.exports = userRouter;
