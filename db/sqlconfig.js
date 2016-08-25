@@ -9,7 +9,7 @@ const Sequelize = require('sequelize');
 //   },
 // });
 const sequelize = new Sequelize('reddi2mingle', 'root', 'root', {
-  host: 'mysql',
+  host: `${process.env.MYSQL}`,
   dialect: 'mysql',
 });
 
