@@ -3,7 +3,7 @@ const neo4j = require('neo4j');
 const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
 // const db = new neo4j.GraphDatabase('http://app55234389-2DSvfe:UxlI4yKGxG8cueLnV1ca@app552343892dsvfe.sb10.stations.graphenedb.com:24789');
-const db = new neo4j.GraphDatabase(`http://neo4j:cake@neo4j:7474`);
+const db = new neo4j.GraphDatabase(`http://neo4j:cake@${process.env.neo4j}:7474`);
 const request = require('request');
 require('../helpers/api_keys');
 
@@ -61,7 +61,7 @@ const updateAccessToken = (username) => (
   new Promise((resolve, reject) => {
     queryRefreshToken(username).then((refreshToken) => {
       request({
-        url: `https://${process.env['REDDIT_KEY']}:${process.env['REDDIT_SECRET']}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${process.env['REDDIT_KEY']}&redirect_uri=http://54.244.188.64:80/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
+        url: `https://${process.env['REDDIT_KEY']}:${process.env['REDDIT_SECRET']}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${process.env['REDDIT_KEY']}&redirect_uri=http://${process.env.HOST}:${process.env.PORT_APP}/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
         method: 'POST',
       }, (err, results) => {
         if (err) {
@@ -279,6 +279,7 @@ module.exports = {
       } else {
         console.log(`user-service/userController.js: user is actually saved to Neo4j, results: ${results}`);
         // Find or create the user
+        console.log(`Create new user, profile: ${profile}`)
         dbSql.Users.findOrCreate({ where: { redditId: profile.id, name: profile.name } }).then(() => {
           dbSql.Users.find({ where: { redditId: profile.id } }).then((task) => {
             console.log(`inside dbsql, profile: ${profile}`)
