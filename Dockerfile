@@ -15,7 +15,6 @@ COPY . /usr/src/users/
 # Install Node and project dependencies
 RUN npm install -gq nodemon \ 
   && npm install -qqq
-  
 
 # Expose port 80/81 (http) 
 EXPOSE 81
