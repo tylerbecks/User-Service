@@ -1,6 +1,6 @@
-require('../helpers/api_keys');
 const Sequelize = require('sequelize');
-require('../helpers/api_keys');
+const keys = require('../helpers/api_keys');
+
 // const sequelize = new Sequelize('heroku_bc34dd4371107d4', 'bd77d9f718d486', '21120e85', {
 //   host: 'us-cdbr-iron-east-04.cleardb.net',
 //   dialect: 'mysql',
@@ -10,8 +10,8 @@ require('../helpers/api_keys');
 //     min: 0
 //   },
 // });
-const sequelize = new Sequelize('reddi2mingle', 'root', process.env.SQL_PW, {
-  host: process.env.MYSQL,
+const sequelize = new Sequelize(keys.SQL_DB, keys.SQL_USERNAME, keys.SQL_PW, {
+  host: keys.SQL_HOST,
   dialect: 'mysql',
 });
 

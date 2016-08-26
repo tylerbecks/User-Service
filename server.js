@@ -5,7 +5,7 @@ const routers = require('./helpers/routes');
 // require('./helpers/seed');
 // require('./helpers/seedCreation');
 require('./db/sqlconfig');
-require('./helpers/api_keys')
+const keys = require('./helpers/api_keys')
 
 // Invoke middleware function on app to 'use' all the middleware functions
 middleware(app);
@@ -14,7 +14,7 @@ middleware(app);
 routers(app);
 
 // App now listening on port 81
-server.listen(`${process.env.PORT_USER}`, (err) => {
+server.listen(`${keys.PORT_USER}`, (err) => {
   err ? console.log(`server/server.js 19: server error: ${err}`) :
-  console.log(`Server listening on ${process.env.PORT_USER} in user-service server.js`);
+  console.log(`Server listening on ${keys.PORT_USER} in user-service server.js`);
 });
