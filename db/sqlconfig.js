@@ -1,4 +1,3 @@
-require('../helpers/api_keys')
 const Sequelize = require('sequelize');
 const keys = require('../helpers/api_keys');
 
@@ -11,9 +10,9 @@ const keys = require('../helpers/api_keys');
 //     min: 0
 //   },
 // });
-const sequelize = new Sequelize(keys.SQL_DB, keys.SQL_USERNAME, keys.SQL_PW, {
-  host: keys.SQL_HOST,
-  dialect: 'mysql',
+const sequelize = new Sequelize('reddi', 'root', 'cake', {
+  host: 'postgres',
+  dialect: 'postgres',
 });
 
 // Table models
@@ -39,18 +38,20 @@ sequelize.authenticate()
 // Users.belongsToMany(Users, { through: 'Match', foreignKey: 'userId' });
 
 // // Synchronizing the database
-sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
-  .then(function() {
-    return sequelize.sync();
-  })
-  .then(function() {
-    return sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
-  })
-  .then(function() {
-    console.log('Database synchronised.');
-  }, function(err) {
-    console.log(err);
-  });
+// sequelize.query('SET FOREIGN_KEY_CHECKS = 0')
+//   .then(function() {
+//     return sequelize.sync();
+//   })
+//   .then(function() {
+//     return sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+//   })
+//   .then(function() {
+//     console.log('Database synchronised.');
+//   }, function(err) {
+//     console.log(err);
+//   });
+
+Users.sync();
 
 module.exports = {
   Users: Users,
