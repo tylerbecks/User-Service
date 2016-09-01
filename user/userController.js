@@ -2,18 +2,17 @@ const bluebird = require('bluebird');
 const neo4j = require('neo4j');
 const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
-// const db = new neo4j.GraphDatabase('http://app55234389-2DSvfe:UxlI4yKGxG8cueLnV1ca@app552343892dsvfe.sb10.stations.graphenedb.com:24789');
 const request = require('request');
 const keys = require('../helpers/api_keys');
-const db = new neo4j.GraphDatabase(`http://${keys.NEO4J_USERNAME}:${keys.NEO4J_PW}@${keys.NEO4J_HOST}:7474`);
+const db = new neo4j.GraphDatabase(`http://neo4j:cake@localhost:7474`);
 
 
-const queryUserSubreddits = (redditId) => (
+const queryUserSubreddits = redditId => (
   new Promise((resolve, reject) => {
     db.cypher({
-      query: 'MATCH (user:Person)-[r:FOLLOWS]->(subreddit) \
-              WHERE user.redditId={redditId} \
-              RETURN subreddit;',
+      query: `MATCH (user:Person)-[r:FOLLOWS]->(subreddit)
+              WHERE user.redditId={redditId}
+              RETURN subreddit;`,
       params: {
         redditId,
       },
@@ -29,7 +28,7 @@ const queryUserSubreddits = (redditId) => (
 );
 
 // Get the user's temporary access token
-const queryAccessToken = (redditId) => (
+const queryAccessToken = redditId => (
   new Promise((resolve, reject) => {
     dbSql.Users.findAll({ where: { redditId: redditId } }).then((userData, err) => {
       if (err) {
@@ -42,9 +41,9 @@ const queryAccessToken = (redditId) => (
 );
 
 // Get the user's refresh token
-const queryRefreshToken = (username) => (
+const queryRefreshToken = username => (
   new Promise((resolve, reject) => {
-    dbSql.Users.find({ where: { name: username } }).then((userData) => {
+    dbSql.Users.find({ where: { name: username } }).then(userData => {
       if (userData === undefined || userData === null) {
         reject('error with finding user');
       } else {
@@ -56,9 +55,9 @@ const queryRefreshToken = (username) => (
 );
 
 // Update MySQL with a new access_token from Reddit (lasts for one hour)
-const updateAccessToken = (username) => (
+const updateAccessToken = username => (
   new Promise((resolve, reject) => {
-    queryRefreshToken(username).then((refreshToken) => {
+    queryRefreshToken(username).then(refreshToken => {
       request({
         url: `https://${keys.REDDIT_KEY}:${keys.REDDIT_SECRET}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${keys.REDDIT_KEY}&redirect_uri=http://${keys.HOST}:${keys.PORT_APP}/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
         method: 'POST',
@@ -67,8 +66,8 @@ const updateAccessToken = (username) => (
           reject(err);
         } else {
           var newAccessToken = JSON.parse(results.body).access_token;
-          dbSql.Users.find({where: {name: username}}).then((task) => {
-            task.update({accessToken: newAccessToken}).then((data2) => {
+          dbSql.Users.find({where: {name: username}}).then(task => {
+            task.update({accessToken: newAccessToken}).then(data2 => {
               resolve(newAccessToken);
             });
           });
@@ -79,9 +78,9 @@ const updateAccessToken = (username) => (
 );
 
 // Get trophies from Reddit
-const trophiesFromReddit = (redditId) => (
+const trophiesFromReddit = redditId => (
   new Promise((resolve, reject) => {
-    queryAccessToken(redditId).then((accessToken) => {
+    queryAccessToken(redditId).then(accessToken => {
       request({
         url: 'https://oauth.reddit.com/api/v1/me/trophies',
         method: 'GET',
@@ -102,9 +101,9 @@ const trophiesFromReddit = (redditId) => (
 );
 
 // Get karma and gold member status from Reddit
-const karmaFromReddit = (redditId) => (
+const karmaFromReddit = redditId => (
   new Promise((resolve, reject) => {
-    queryAccessToken(redditId).then((accessToken) => {
+    queryAccessToken(redditId).then(accessToken => {
       request({
         url: 'https://oauth.reddit.com/api/v1/me',
         method: 'GET',
@@ -129,7 +128,7 @@ const karmaFromReddit = (redditId) => (
 // Get list of subscribed subreddits from reddit and add to the database
 const createUserSubreddits = (redditId, res) => {
   // Request list of subscribed subreddits from Reddit
-  queryAccessToken(redditId).then((accessToken) => {
+  queryAccessToken(redditId).then(accessToken => {
     request({
       url: 'https://oauth.reddit.com/subreddits/mine',
       method: 'GET',
@@ -202,10 +201,10 @@ const createUserSubreddits = (redditId, res) => {
 
 // Update the profile data (karma, trophies, gold member, status)
 const updateProfileData = (redditId, res) => (
-  trophiesFromReddit(redditId).then((trophyCount) => {
-    karmaFromReddit(redditId).then((karmaCount) => { 
+  trophiesFromReddit(redditId).then(trophyCount => {
+    karmaFromReddit(redditId).then(karmaCount => { 
       var goldMemberStatus = karmaCount.goldMember === "true" ? "Yes" : "No";
-      dbSql.Users.find( { where: { redditId: redditId }}).then((task) => {
+      dbSql.Users.find( { where: { redditId: redditId }}).then(task => {
         task.update({
           trophyCount: trophyCount,
           postKarma: karmaCount.postKarma,
@@ -230,7 +229,7 @@ module.exports = {
     const potentialRedditId = req.body.potentialRedditId
     const userRedditId = req.body.userRedditId
     // Increment the delievered upvote / downvote
-    dbSql.Users.find({ where: { redditId: userRedditId }}).then((userTask) => {
+    dbSql.Users.find({ where: { redditId: userRedditId }}).then(userTask => {
       var newDeliveredUpvotes = userTask.dataValues.deliveredUpvotes + deliveredUpvotes;
       var newDeliveredDownvotes = userTask.dataValues.deliveredDownvotes + deliveredDownvotes;
       userTask.update({
@@ -239,7 +238,7 @@ module.exports = {
       })
       // Then increment the received upvote / downvote for the potential
       .then(() => {
-        dbSql.Users.find({ where: { redditId: potentialRedditId }}).then((potentialTask) => {
+        dbSql.Users.find({ where: { redditId: potentialRedditId }}).then(potentialTask => {
           var newReceivedUpvotes = potentialTask.dataValues.receivedUpvotes + deliveredUpvotes;
           var newReceivedDownvotes = potentialTask.dataValues.receivedDownvotes + deliveredDownvotes;
           potentialTask.update({
@@ -274,7 +273,7 @@ module.exports = {
       } else {
         // Find or create the user
         dbSql.Users.findOrCreate({ where: { redditId: profile.id, name: profile.name } }).then(() => {
-          dbSql.Users.find({ where: { redditId: profile.id } }).then((task) => {
+          dbSql.Users.find({ where: { redditId: profile.id } }).then(task => {
             // Update is invoked (so that we aren't creating duplicate users)
             task.update({
               refreshToken: refreshToken,
@@ -283,7 +282,7 @@ module.exports = {
               preference: null,
               gender: null,
             })
-            .then((data) => {
+            .then(data => {
               createUserSubreddits(profile.id, res);
             })
           });
@@ -296,12 +295,12 @@ module.exports = {
     var username = req.body.username;
     var password = req.body.password;
 
-    dbSql.Users.findAll({ where: { name: username, password: password } }).then(function(data) {
+    dbSql.Users.findAll({ where: { name: username, password: password } }).then(data => {
       if (data.length) {
         var redditId = data[0].dataValues.redditId;
         var name = data[0].dataValues.name;
         var photo = data[0].dataValues.photo;
-        updateAccessToken(username).then((accessToken) => {
+        updateAccessToken(username).then(accessToken => {
           createUserSubreddits(redditId, res);
         });
       } else {
@@ -313,9 +312,9 @@ module.exports = {
   queryUserInfo: (req, res) => {
     const redditId = req.query.redditId;
     // First query database for subreddit connections    
-    dbSql.Users.find({where: {redditId: redditId }}).then((userInfo)=> {    
+    dbSql.Users.find({where: {redditId: redditId }}).then(userInfo=> {    
       var aggregateInfo = userInfo.dataValues;
-      queryUserSubreddits(redditId).then((subreddits) => {
+      queryUserSubreddits(redditId).then(subreddits => {
         aggregateInfo.subreddits = subreddits;
         res.send(aggregateInfo);
       });
@@ -325,8 +324,8 @@ module.exports = {
   updatePassword: (req, res) => {
     var redditId = req.body.redditId;
     var password = req.body.password;
-    dbSql.Users.find({where: {redditId: redditId}}).then((task) => {
-      task.update({password: password}).then((data2) => {
+    dbSql.Users.find({where: {redditId: redditId}}).then(task => {
+      task.update({password: password}).then(data2 => {
         res.send('password updated in MySQL');
       });
     });
@@ -336,7 +335,7 @@ module.exports = {
     var username = req.body.username;
     var password = req.body.password;
 
-    queryRefreshToken(username, password).then((refreshToken) => {
+    queryRefreshToken(username, password).then(refreshToken => {
       request({
         url: `https://${keys.REDDIT_KEY}:${keys.REDDIT_SECRET}@ssl.reddit.com/api/v1/access_token?state=uniquestring&scope=identity&client_id=${keys.REDDIT_KEY}&redirect_uri=http://${keys.HOST}:${keys.PORT_APP}/auth/reddit/callback&refresh_token=${refreshToken}&grant_type=refresh_token`,
         method: 'POST',
@@ -346,8 +345,8 @@ module.exports = {
         } else {
           // console.log(`server/userController.js 224: results: ${results}`);
           var newAccessToken = JSON.parse(results.body).access_token;
-          dbSql.Users.find({where: {name: username}}).then((task) => {
-            task.update({accessToken: newAccessToken}).then((data2) => {
+          dbSql.Users.find({where: {name: username}}).then(task => {
+            task.update({accessToken: newAccessToken}).then(data2 => {
               res.send('accessToken updated in MySQL');
             });
           });
@@ -369,8 +368,8 @@ module.exports = {
       if (err) {
         res.status(401).send(`Error with updating preference and gender ${err}`);
       } else {
-        dbSql.Users.find({ where: { redditId: redditId }}).then((task) => {
-          task.update({ gender: gender, preference: preference }).then((data2) => {
+        dbSql.Users.find({ where: { redditId: redditId }}).then(task => {
+          task.update({ gender: gender, preference: preference }).then(data2 => {
             // User preferences have now been added
             // Request main app server to being the potential creation process
             request({
@@ -402,7 +401,7 @@ module.exports = {
       if (err) {
         res.status(401).send(`Error adding photo ${err}`);
       } else {
-        dbSql.Users.find({where: { redditId: req.body.redditId }}).then((task) => {
+        dbSql.Users.find({where: { redditId: req.body.redditId }}).then(task => {
           task.update({
             photo: req.body.photo,
           })
