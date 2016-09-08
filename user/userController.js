@@ -4,7 +4,7 @@ const sequelize = require('sequelize');
 const dbSql = require('../db/sqlconfig');
 const request = require('request');
 const keys = require('../helpers/api_keys');
-const db = new neo4j.GraphDatabase(`http://neo4j:cake@localhost:7474`);
+const db = new neo4j.GraphDatabase(`http://neo4j:cake@${keys.NEO4J_HOST}:7474`);
 
 
 const queryUserSubreddits = redditId => (
@@ -373,10 +373,10 @@ module.exports = {
             // User preferences have now been added
             // Request main app server to being the potential creation process
             request({
-              method: 'POST',
               url: `http://${keys.HOST}:${keys.PORT_APP}/api/potentials/createPotentials`,
+              method: 'POST',
               form: {
-                redditId: redditId,
+                redditId
               }
             }, (err, response) => {
               if (err) {

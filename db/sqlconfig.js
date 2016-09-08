@@ -20,9 +20,9 @@ const Users = require('../user/userModel')(sequelize, Sequelize);
 
 // Connect to database
 sequelize.authenticate()
-  .then((err) => {
+  .then(err => {
     console.log('Connection has been established successfully.');
-  }, (err) => {
+  }, err => {
     console.log('Unable to connect to the database:', err);
   });
 

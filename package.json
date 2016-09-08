@@ -4,7 +4,7 @@
   "description": "#How to start this application `npm run server`",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon -L server.js",
+    "start": "node server.js",
     "start:dev": "nodemon server.js"
   },
   "repository": {
@@ -32,6 +32,7 @@
     "passport-reddit": "^0.2.4",
     "path": "^0.12.7",
     "pg": "^6.1.0",
+    "request": "^2.74.0",
     "sequelize": "^3.24.0",
     "socket.io-client": "^1.4.8",
     "webpack-merge": "^0.14.1"
